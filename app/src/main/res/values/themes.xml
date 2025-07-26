@@ -1,9 +1,15 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Base.Theme.Music_tangjian" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
         <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="android:activityOpenEnterAnimation">@anim/fade_in</item>
+        <item name="android:activityOpenExitAnimation">@anim/fade_out</item>
+        <item name="android:windowActivityTransitions">true</item>
     </style>
 
-    <style name="Theme.Music_tangjian" parent="Base.Theme.Music_tangjian" />
+
+    <style name="Theme.Music_tangjian" parent="Base.Theme.Music_tangjian">
+    </style>
+
+
 </resources>
