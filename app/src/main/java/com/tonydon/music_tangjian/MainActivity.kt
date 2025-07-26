@@ -108,6 +108,7 @@ class MainActivity : AppCompatActivity() {
     fun loadMore() {
         Log.d("music", "$current")
         if ((current - 1) * size > maxSize) {
+            isLoading = false
             return
         }
         lifecycleScope.launch(Dispatchers.IO) {
