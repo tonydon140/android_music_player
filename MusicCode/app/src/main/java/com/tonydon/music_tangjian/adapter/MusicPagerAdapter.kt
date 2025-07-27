@@ -1,0 +1,29 @@
+package com.tonydon.music_tangjian.adapter
+
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
+import androidx.viewpager2.adapter.FragmentStateAdapter
+import com.tonydon.music_tangjian.fragment.CoverFragment
+import com.tonydon.music_tangjian.fragment.LyricFragment
+import com.tonydon.music_tangjian.io.MusicInfo
+
+class MusicPagerAdapter(
+    val musicInfo: MusicInfo,
+    fragment: FragmentActivity
+) : FragmentStateAdapter(fragment) {
+
+    val coverFragment = CoverFragment(musicInfo.coverUrl)
+    val lyricFragment = LyricFragment(musicInfo.lyricUrl)
+
+    override fun createFragment(position: Int): Fragment {
+        return when (position) {
+            0 -> coverFragment
+            1 -> lyricFragment
+            else -> throw IllegalArgumentException("Invalid page")
+        }
+    }
+
+    override fun getItemCount(): Int {
+        return 2
+    }
+}
