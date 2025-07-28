@@ -265,6 +265,7 @@ class MusicService() : Service() {
                         for (listener in onPlayListEmptyListeners) {
                             listener.onEmpty()
                         }
+                        currentIndex--
                     }
                     // b) 顺序 / 单曲循环
                     playMode == 0 || playMode == 1 -> {
@@ -299,10 +300,10 @@ class MusicService() : Service() {
             isUserSwitch = true
             for (i in 0 until playlist.size) {
                 if (playlist[i].id == music.id) {
-                    if (i == currentIndex) {
-                        return
-                    } else {
+                    if (currentIndex != i) {
                         currentIndex = i
+                    } else {
+                        return
                     }
                     break
                 }

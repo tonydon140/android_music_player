@@ -44,6 +44,7 @@
         android:paddingVertical="8dp">
 
         <ImageView
+            android:id="@+id/iv_list_type"
             android:layout_width="16dp"
             android:layout_height="16dp"
             android:layout_gravity="center_vertical"
@@ -52,6 +53,7 @@
             android:src="@drawable/ic_list_type_cycle" />
 
         <TextView
+            android:id="@+id/tv_list_type"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"

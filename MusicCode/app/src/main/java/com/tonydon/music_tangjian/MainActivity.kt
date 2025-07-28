@@ -101,6 +101,7 @@ class MainActivity : AppCompatActivity() {
         })
 
         PlayerManager.binder.addOnPreparedListener { music ->
+            bottomView.visibility = View.VISIBLE
             nameTV.text = music.musicName
             val tmp = "-${music.author}"
             authorTV.text = tmp
