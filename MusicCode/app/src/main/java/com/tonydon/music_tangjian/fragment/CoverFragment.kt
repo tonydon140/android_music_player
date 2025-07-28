@@ -10,8 +10,11 @@ import android.view.ViewGroup
 import android.view.animation.LinearInterpolator
 import android.view.animation.RotateAnimation
 import android.widget.ImageView
+import androidx.fragment.app.activityViewModels
 import com.bumptech.glide.Glide
 import com.tonydon.music_tangjian.R
+import com.tonydon.music_tangjian.service.PlayerManager
+import com.tonydon.music_tangjian.vm.MusicViewModel
 
 
 class CoverFragment(
@@ -20,6 +23,9 @@ class CoverFragment(
 
     lateinit var imageView: ImageView
     lateinit var rotateAnim: ObjectAnimator
+
+    // 缓存外部请求的 URL
+    private var pendingCoverUrl: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,14 +46,30 @@ class CoverFragment(
             repeatCount = ValueAnimator.INFINITE  // 无限循环
             interpolator = LinearInterpolator()   // 匀速插值，保持匀速旋转
         }
-        rotateAnim.start()
-        updateImage(coverUrl)
+        if (PlayerManager.binder.isPlaying()) {
+            rotateAnim.start()
+        }
+        // 如果外部在 onViewCreated 之前调用过 updateImage，就在这里真正加载一次
+        pendingCoverUrl?.let { doLoadCover(it) }
+        pendingCoverUrl = null
+        doLoadCover(coverUrl)
     }
 
-
+    /**
+     * Activity / Adapter / Service 统一调用这个方法来更新封面
+     */
     fun updateImage(coverUrl: String) {
-        Glide.with(imageView)
-            .load(coverUrl)
+        // Fragment 尚未 attach，或者 view 还没初始化
+        if (!this::imageView.isInitialized) {
+            pendingCoverUrl = coverUrl
+            return
+        }
+        doLoadCover(coverUrl)
+    }
+
+    private fun doLoadCover(url: String) {
+        Glide.with(this)
+            .load(url)
             .circleCrop()
             .into(imageView)
     }
@@ -57,7 +79,11 @@ class CoverFragment(
     }
 
     fun resumeAnim() {
-        rotateAnim.resume()
+        if (!rotateAnim.isStarted) {
+            rotateAnim.start()
+        } else {
+            rotateAnim.resume()
+        }
     }
 
 }

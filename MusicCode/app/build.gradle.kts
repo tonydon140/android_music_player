@@ -41,6 +41,9 @@ android {
 }
 
 dependencies {
+    // ViewModel
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.0")
+    implementation("androidx.fragment:fragment-ktx:1.5.0")
     // 歌词
     implementation("com.github.Moriafly:LyricViewX:1.3.2")
     // 调色板

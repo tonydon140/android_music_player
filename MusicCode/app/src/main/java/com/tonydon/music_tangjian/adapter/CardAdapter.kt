@@ -20,6 +20,7 @@ import com.chad.library.adapter4.viewholder.QuickViewHolder
 import com.tonydon.music_tangjian.AudioPlayActivity
 import com.tonydon.music_tangjian.R
 import com.tonydon.music_tangjian.io.MusicInfo
+import com.tonydon.music_tangjian.service.PlayerManager
 
 /**
  * BaseQuickAdapter<T : Any, VH : RecyclerView.ViewHolder>
@@ -42,8 +43,12 @@ class CardAdapter(
 
         holder.getView<TextView>(R.id.tv_author).text = item?.author
         holder.getView<TextView>(R.id.tv_music_name).text = item?.musicName
-        // 点击播放，打开播放界面
+        // 点击 + 号，添加音乐到播放列表
         holder.getView<ImageButton>(R.id.ib_play).setOnClickListener {
+            PlayerManager.binder.addOne(item!!)
+        }
+
+        holder.itemView.setOnClickListener {
             onPlay(position)
         }
     }

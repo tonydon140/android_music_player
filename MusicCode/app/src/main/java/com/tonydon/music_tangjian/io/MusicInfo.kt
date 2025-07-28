@@ -20,4 +20,11 @@ data class MusicInfo(
     val coverUrl: String,
     val musicUrl: String,
     val lyricUrl: String,
-) : Parcelable
+) : Parcelable {
+
+    override fun equals(other: Any?): Boolean {
+        return id == (other as? MusicInfo)?.id
+    }
+
+    override fun hashCode(): Int = id.hashCode()
+}

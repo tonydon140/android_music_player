@@ -1,20 +1,28 @@
 package com.tonydon.music_tangjian
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.view.View
+import android.widget.ImageButton
+import android.widget.ImageView
+import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import com.bumptech.glide.Glide
 import com.google.gson.Gson
 import com.tonydon.music_tangjian.adapter.ItemAdapter
-import com.tonydon.music_tangjian.io.MusicInfo
+import com.tonydon.music_tangjian.fragment.MusicListBottomSheet
 import com.tonydon.music_tangjian.io.MusicRes
+import com.tonydon.music_tangjian.service.PlayerManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
@@ -31,6 +39,12 @@ class MainActivity : AppCompatActivity() {
     var current = 1
     val maxSize = 9
     val size = 4
+    lateinit var nameTV: TextView
+    lateinit var authorTV: TextView
+    lateinit var coverIV: ImageView
+    lateinit var playIB: ImageButton
+    lateinit var listIB: ImageButton
+    lateinit var bottomView: ConstraintLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,30 +55,33 @@ class MainActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
-
+        nameTV = findViewById(R.id.tv_bottom_name)
+        authorTV = findViewById(R.id.tv_bottom_author)
+        coverIV = findViewById(R.id.iv_bottom_cover)
+        playIB = findViewById(R.id.ib_home_play)
+        listIB = findViewById(R.id.ib_bottom_list)
+        bottomView = findViewById(R.id.floating_view)
 
         rvContent = findViewById(R.id.rv_content)
         // ItemAdapter 设置播放回调
         itemAdapter = ItemAdapter { infoList, pos ->
+            PlayerManager.binder.addPlayList(infoList)
+            PlayerManager.binder.playMusic(infoList[pos])
             val intent = Intent(this, AudioPlayActivity::class.java)
-            intent.putParcelableArrayListExtra("infoList", ArrayList(infoList))
-            intent.putExtra("pos", pos)
             startActivity(intent)
         }
         rvContent.adapter = itemAdapter
         val layoutManager = LinearLayoutManager(this)
         rvContent.layoutManager = layoutManager
 
-
-
-        swipeRefreshLayout = findViewById(R.id.swipe)
         // 下拉刷新
+        swipeRefreshLayout = findViewById(R.id.swipe)
         swipeRefreshLayout.setOnRefreshListener {
             current = 1
             fetchData()
         }
+        // 请求数据
         fetchData()
-
 
         // 上拉加载更多
         rvContent.addOnScrollListener(object : RecyclerView.OnScrollListener() {
@@ -83,6 +100,47 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
+        PlayerManager.binder.addOnPreparedListener { music ->
+            nameTV.text = music.musicName
+            val tmp = "-${music.author}"
+            authorTV.text = tmp
+            Glide.with(coverIV)
+                .load(music.coverUrl)
+                .circleCrop()
+                .into(coverIV)
+        }
+
+        PlayerManager.binder.addOnStartListener {
+            playIB.setImageResource(R.drawable.ic_home_pause) // 切换为播放图标
+        }
+
+        PlayerManager.binder.addOnPauseListener {
+            playIB.setImageResource(R.drawable.ic_home_play) // 切换为播放图标
+        }
+
+        // 播放列表为空
+        PlayerManager.binder.addOnPlayListEmptyListener {
+            // 隐藏 View
+            bottomView.visibility = View.GONE
+        }
+
+        playIB.setOnClickListener { PlayerManager.binder.pauseOrResume() }
+
+        // 弹出音乐列表
+        listIB.setOnClickListener {
+            MusicListBottomSheet().show(supportFragmentManager, "MusicList")
+        }
+
+        // 点击悬浮 View 进入播放页面
+        bottomView.setOnClickListener {
+            val intent = Intent(this, AudioPlayActivity::class.java)
+            startActivity(intent)
+            @Suppress("DEPRECATION")
+            overridePendingTransition(
+                R.anim.slide_in_up,
+                0
+            )
+        }
     }
 
 
@@ -108,9 +166,11 @@ class MainActivity : AppCompatActivity() {
                 itemAdapter.submitList(res.data.records)
                 swipeRefreshLayout.isRefreshing = false
             }
+            // 添加随机的模块音乐
+            val randomMusicList = res.data.records.random().musicInfoList
+            PlayerManager.binder.initPlayList(randomMusicList)
             Log.d("music", res.data.records.toString())
         }
-
     }
 
     fun loadMore() {
