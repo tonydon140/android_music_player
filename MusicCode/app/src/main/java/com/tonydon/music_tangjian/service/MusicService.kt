@@ -3,19 +3,24 @@ package com.tonydon.music_tangjian.service
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
-import android.content.Context
 import android.content.Intent
-import android.media.AudioManager
 import android.media.MediaPlayer
 import android.os.Binder
-import android.os.Build
 import android.os.IBinder
 import android.util.Log
+import androidx.annotation.OptIn
 import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import com.tonydon.music_tangjian.MainActivity
 import com.tonydon.music_tangjian.R
 import com.tonydon.music_tangjian.io.MusicInfo
+import com.tonydon.music_tangjian.utils.CacheManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -27,6 +32,8 @@ class MusicService() : Service() {
 
     private var playMode = 0
     private val mediaPlayer: MediaPlayer = MediaPlayer()
+    private lateinit var exoPlayer: ExoPlayer
+
     private val binder = MusicBinder()
 
     // 去重集合
@@ -112,16 +119,8 @@ class MusicService() : Service() {
         fun playCurrent(isUser: Boolean = true) {
             val music = playlist.getOrNull(currentIndex) ?: return
             if (isUser) isUserSwitch = true
-            // 开启协程，加载音乐
-            CoroutineScope(Dispatchers.IO).launch {
-                // 加锁，同时只能有一个就行加载资源
-                mediaLock.withLock {
-                    mediaPlayer.reset()
-                    mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC)
-                    mediaPlayer.setDataSource(music.musicUrl) // 可能阻塞
-                    mediaPlayer.prepareAsync() // 异步准备
-                }
-            }
+            exoPlayer.setMediaItem(MediaItem.fromUri(music.musicUrl))   // 设置 URI
+            exoPlayer.prepare()  // 异步准备
         }
 
         fun switchPlayMode() {
@@ -167,42 +166,9 @@ class MusicService() : Service() {
             playCurrent()
         }
 
-//        /**
-//         * 软件自动的下一曲
-//         *
-//         */
-//        fun playNext() {
-//            isUserSwitch = true
-//            if (playMode == 0) {
-//                currentIndex = (currentIndex + 1) % playlist.size
-//            } else if (playMode == 2) {
-//                var pos: Int
-//                do {
-//                    pos = Random.nextInt(playlist.size)
-//                } while (pos == currentIndex)
-//                currentIndex = pos
-//            }
-//            playCurrent()
-//        }
-//
-//        /**
-//         * 软件自动的上一曲
-//         */
-//        fun playPrev() {
-//            if (playMode == 0) {
-//                currentIndex = (playlist.size + currentIndex - 1) % playlist.size
-//            } else if (playMode == 2) {
-//                var pos: Int
-//                do {
-//                    pos = Random.nextInt(playlist.size)
-//                } while (pos == currentIndex)
-//                currentIndex = pos
-//            }
-//            playCurrent()
-//        }
 
         fun pauseOrResume() {
-            if (mediaPlayer.isPlaying) {
+            if (exoPlayer.isPlaying) {
                 pause()
             } else {
                 resume()
@@ -210,25 +176,27 @@ class MusicService() : Service() {
         }
 
         fun pause() {
-            mediaPlayer.pause()
+            exoPlayer.pause()
+//            mediaPlayer.pause()
             for (listener in onPauseListeners) {
                 listener.onPause()
             }
         }
 
         fun resume() {
-            mediaPlayer.start()
+            exoPlayer.play()
+//            mediaPlayer.start()
             for (listener in onStartListeners) {
                 listener.onStart()
             }
         }
 
 
-        fun seekTo(ms: Int) = mediaPlayer.seekTo(ms)
-        fun getDuration() = mediaPlayer.duration
-        fun getCurrentPosition() = mediaPlayer.currentPosition
+        fun seekTo(ms: Int) = exoPlayer.seekTo(ms.toLong())
+        fun getDuration() = exoPlayer.duration.toInt()
+        fun getCurrentPosition() = exoPlayer.currentPosition.toInt()
 
-        fun isPlaying() = mediaPlayer.isPlaying
+        fun isPlaying() = exoPlayer.isPlaying
 
         fun getPlayMode() = playMode
 
@@ -324,43 +292,114 @@ class MusicService() : Service() {
     }
 
 
+    @OptIn(UnstableApi::class)
     override fun onCreate() {
         super.onCreate()
-        // 音乐准备完毕回调
-        mediaPlayer.setOnPreparedListener {
-            it.start() // 回到主线程启动播放
-            isUserSwitch = false
-            for (listener in onPreparedListeners) {
-                listener.onPrepared(playlist[currentIndex])
-            }
-            for (listener in onStartListeners) {
-                listener.onStart()
-            }
-        }
-        // 音乐播放完毕回调
-        mediaPlayer.setOnCompletionListener {
-            if (!isUserSwitch) {
-                isUserSwitch = true
-                if (playMode == 0) {
-                    currentIndex = (currentIndex + 1) % playlist.size
-                } else if (playMode == 2) {
-                    var pos: Int
-                    do {
-                        pos = Random.nextInt(playlist.size)
-                    } while (pos == currentIndex)
-                    currentIndex = pos
+        // 构建 DefaultMediaSourceFactory，并注入到播放器
+        val factory = DefaultMediaSourceFactory(
+            CacheManager.buildCacheDataSourceFactory(applicationContext)
+        )
+
+        // 构建播放器
+        exoPlayer = ExoPlayer.Builder(applicationContext)
+            .setMediaSourceFactory(factory)
+            .build()
+        exoPlayer.playWhenReady = true  // 准备好后自动播放
+
+        // 播放器监听
+        exoPlayer.addListener(object : Player.Listener {
+            /**
+             * 播放状态的监听
+             */
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                when (playbackState) {
+                    Player.STATE_BUFFERING -> {
+                        // 正在缓冲/加载
+                    }
+
+                    Player.STATE_READY -> {
+                        // 媒体已加载完毕并可播放
+                        isUserSwitch = false
+                        updateNotification() // 更新通知
+                        // 调用 onPrepared 监听
+                        for (listener in onPreparedListeners) {
+                            listener.onPrepared(playlist[currentIndex])
+                        }
+                    }
+
+                    Player.STATE_ENDED -> {
+                        // 播放结束
+                        if (!isUserSwitch) {
+                            isUserSwitch = true
+                            if (playMode == 0) {
+                                currentIndex = (currentIndex + 1) % playlist.size
+                            } else if (playMode == 2) {
+                                var pos: Int
+                                do {
+                                    pos = Random.nextInt(playlist.size)
+                                } while (pos == currentIndex)
+                                currentIndex = pos
+                            }
+                            binder.playCurrent(isUser = false)
+                        }
+                        Log.d("music_completion_user", "current = $currentIndex")
+                    }
+
+                    Player.STATE_IDLE -> {
+                        // 未开始或已停止
+                    }
                 }
-                binder.playCurrent(isUser = false)
             }
-            Log.d("music_completion_user", "current = $currentIndex")
-        }
+
+            /**
+             * 开始播放的监听
+             */
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                if (isPlaying) {
+                    for (listener in onStartListeners) {
+                        listener.onStart()
+                    }
+                }
+            }
+        })
+//        exoPlayer.addListener(object : Player)
+//        // 音乐准备完毕回调
+//        mediaPlayer.setOnPreparedListener {
+//            it.start() // 回到主线程启动播放
+//
+//            Log.d("music_OnPrepared", "currentIndex = $currentIndex")
+//
+//
+//        }
+//        // 音乐播放完毕回调
+//        mediaPlayer.setOnCompletionListener {
+//            if (!isUserSwitch) {
+//                isUserSwitch = true
+//                if (playMode == 0) {
+//                    currentIndex = (currentIndex + 1) % playlist.size
+//                } else if (playMode == 2) {
+//                    var pos: Int
+//                    do {
+//                        pos = Random.nextInt(playlist.size)
+//                    } while (pos == currentIndex)
+//                    currentIndex = pos
+//                }
+//                binder.playCurrent(isUser = false)
+//            }
+//            Log.d("music_completion_user", "current = $currentIndex")
+//        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val notification = createPlaybackNotification()
-        startForeground(1, notification)
+        startForeground(PLAYBACK_NOTIFICATION_ID, notification)
         return START_STICKY
     }
+
+    private val notificationManager by lazy {
+        getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+    }
+    private val PLAYBACK_NOTIFICATION_ID = 1
 
     private fun createPlaybackNotification(): Notification {
         // 常见通知渠道
@@ -371,18 +410,56 @@ class MusicService() : Service() {
             NotificationManager.IMPORTANCE_LOW
         )
         // 注册通知渠道
-        val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        manager.createNotificationChannel(channel)
+        notificationManager.createNotificationChannel(channel)
 
+        // 创建 PendingIntent 跳转到 MainActivity
+        val clickIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            clickIntent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
 
         return NotificationCompat.Builder(this, channelId)
             .setContentTitle("正在播放")
-            .setContentText("xxx - 歌手")
-            .setSmallIcon(R.drawable.ic_not_favorite)
+            .setContentText("-")
+            .setSmallIcon(R.drawable.ic_launcher_music)
+            .setContentIntent(pendingIntent)
             .setOngoing(true)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .build()
     }
+
+
+    fun updateNotification() {
+        // 创建 PendingIntent 跳转到 MainActivity
+        val clickIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            clickIntent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        val channelId = "music_playback"
+        val music = playlist[currentIndex]
+        val newNotification = NotificationCompat.Builder(this, channelId)
+            .setContentTitle("正在播放")
+            .setContentText("${music.musicName} - ${music.author}")  // 更新歌曲标题
+            .setSmallIcon(R.drawable.ic_launcher_music)
+            .setOngoing(true)
+            .setContentIntent(pendingIntent)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .build()
+        notificationManager.notify(PLAYBACK_NOTIFICATION_ID, newNotification)
+    }
+
 
     private val mediaLock = Mutex()
 
@@ -390,7 +467,7 @@ class MusicService() : Service() {
     override fun onBind(intent: Intent?): IBinder? = binder
 
     override fun onDestroy() {
-        mediaPlayer.release()
+        exoPlayer.release()
         super.onDestroy()
     }
 }

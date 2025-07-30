@@ -63,6 +63,10 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     // Gson
     implementation("com.google.code.gson:gson:2.13.1")
+    // ExoPlayer
+    implementation("androidx.media3:media3-exoplayer:1.7.1")
+    implementation("androidx.media3:media3-datasource:1.7.1")
+    implementation("androidx.media3:media3-exoplayer-dash:1.7.1")
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

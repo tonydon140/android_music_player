@@ -1,6 +1,5 @@
 package com.tonydon.music_tangjian
 
-import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -13,7 +12,6 @@ import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
@@ -183,10 +181,10 @@ class MainActivity : AppCompatActivity() {
             runOnUiThread {
                 itemAdapter.submitList(res.data.records)
                 swipeRefreshLayout.isRefreshing = false
+                // 添加随机的模块音乐
+                val randomMusicList = res.data.records.random().musicInfoList
+                PlayerManager.binder.initPlayList(randomMusicList)
             }
-            // 添加随机的模块音乐
-            val randomMusicList = res.data.records.random().musicInfoList
-            PlayerManager.binder.initPlayList(randomMusicList)
             Log.d("music", res.data.records.toString())
         }
     }
