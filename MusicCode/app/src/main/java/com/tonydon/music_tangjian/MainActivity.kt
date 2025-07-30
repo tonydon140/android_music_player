@@ -2,6 +2,8 @@ package com.tonydon.music_tangjian
 
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -11,6 +13,7 @@ import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
@@ -46,6 +49,14 @@ class MainActivity : AppCompatActivity() {
     lateinit var listIB: ImageButton
     lateinit var bottomView: ConstraintLayout
 
+    private fun requestPermission(){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1001)
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -55,6 +66,36 @@ class MainActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+        requestPermission() // 请求权限
+
+        // 启动服务
+        PlayerManager.init(this) {
+            PlayerManager.binder.addOnPreparedListener { music ->
+                bottomView.visibility = View.VISIBLE
+                nameTV.text = music.musicName
+                val tmp = "-${music.author}"
+                authorTV.text = tmp
+                Glide.with(coverIV)
+                    .load(music.coverUrl)
+                    .circleCrop()
+                    .into(coverIV)
+            }
+
+            PlayerManager.binder.addOnStartListener {
+                playIB.setImageResource(R.drawable.ic_home_pause) // 切换为播放图标
+            }
+
+            PlayerManager.binder.addOnPauseListener {
+                playIB.setImageResource(R.drawable.ic_home_play) // 切换为播放图标
+            }
+
+            // 播放列表为空
+            PlayerManager.binder.addOnPlayListEmptyListener {
+                // 隐藏 View
+                bottomView.visibility = View.GONE
+            }
+        }
+
         nameTV = findViewById(R.id.tv_bottom_name)
         authorTV = findViewById(R.id.tv_bottom_author)
         coverIV = findViewById(R.id.iv_bottom_cover)
@@ -100,30 +141,6 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        PlayerManager.binder.addOnPreparedListener { music ->
-            bottomView.visibility = View.VISIBLE
-            nameTV.text = music.musicName
-            val tmp = "-${music.author}"
-            authorTV.text = tmp
-            Glide.with(coverIV)
-                .load(music.coverUrl)
-                .circleCrop()
-                .into(coverIV)
-        }
-
-        PlayerManager.binder.addOnStartListener {
-            playIB.setImageResource(R.drawable.ic_home_pause) // 切换为播放图标
-        }
-
-        PlayerManager.binder.addOnPauseListener {
-            playIB.setImageResource(R.drawable.ic_home_play) // 切换为播放图标
-        }
-
-        // 播放列表为空
-        PlayerManager.binder.addOnPlayListEmptyListener {
-            // 隐藏 View
-            bottomView.visibility = View.GONE
-        }
 
         playIB.setOnClickListener { PlayerManager.binder.pauseOrResume() }
 

@@ -8,6 +8,5 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         MMKV.initialize(this)   // 初始化 mmkv
-        PlayerManager.init(this) // 初始化音乐播放服务
     }
 }

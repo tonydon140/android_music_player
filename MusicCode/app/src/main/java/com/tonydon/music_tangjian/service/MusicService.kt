@@ -1,12 +1,20 @@
 package com.tonydon.music_tangjian.service
 
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
 import android.media.MediaPlayer
 import android.os.Binder
+import android.os.Build
 import android.os.IBinder
 import android.util.Log
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import com.tonydon.music_tangjian.R
 import com.tonydon.music_tangjian.io.MusicInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -346,6 +354,34 @@ class MusicService() : Service() {
             }
             Log.d("music_completion_user", "current = $currentIndex")
         }
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val notification = createPlaybackNotification()
+        startForeground(1, notification)
+        return START_STICKY
+    }
+
+    private fun createPlaybackNotification(): Notification {
+        // 常见通知渠道
+        val channelId = "music_playback"
+        val channel = NotificationChannel(
+            channelId,
+            "音乐播放",
+            NotificationManager.IMPORTANCE_LOW
+        )
+        // 注册通知渠道
+        val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        manager.createNotificationChannel(channel)
+
+
+        return NotificationCompat.Builder(this, channelId)
+            .setContentTitle("正在播放")
+            .setContentText("xxx - 歌手")
+            .setSmallIcon(R.drawable.ic_not_favorite)
+            .setOngoing(true)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .build()
     }
 
     private val mediaLock = Mutex()
