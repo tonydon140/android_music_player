@@ -42,8 +42,8 @@ class MusicListAdapter(
         } else {
             authorTV.text = music.author
         }
-        holder.itemView.setOnClickListener { onPlayClick(position) }
-        deleteIV.setOnClickListener { onDeleteClick(position) }
+        holder.itemView.setOnClickListener { onPlayClick(music.id) }
+        deleteIV.setOnClickListener { onDeleteClick(music.id) }
     }
 
     override fun onCreateViewHolder(

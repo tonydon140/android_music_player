@@ -171,15 +171,18 @@ object PlayerManager {
         playCurrent()
     }
 
-    fun remove(pos: Int) {
-        if (pos !in _playlist.value.indices) return
-        val music = _playlist.value[pos]
+    fun remove(id: Int) {
+        val index = findIndexById(id)
+        if (index == -1){
+            return
+        }
 
         // 删除音乐
+        val music = _playlist.value[index]
         playlistSet.remove(music)
         _playlist.value = _playlist.value - music
 
-        if (pos == currentIndex) {
+        if (index == currentIndex) {
             // 如果删除的是当前播放的音乐
             when {
                 // a) 删完没了
@@ -190,7 +193,7 @@ object PlayerManager {
                 // b) 顺序 / 单曲循环
                 playMode.value == 0 || playMode.value == 1 -> {
                     // 如果删掉的是最后一个，回到 0，否则 currentIndex 保持 pos（因为后面项自动顶上来）
-                    val next = if (pos >= _playlist.value.size) 0 else pos
+                    val next = if (index >= _playlist.value.size) 0 else index
                     currentIndex = next
                     playCurrent()
                 }
@@ -200,18 +203,27 @@ object PlayerManager {
                     playCurrent()
                 }
             }
-        } else if (pos < currentIndex) {
+        } else if (index < currentIndex) {
             // 删掉的音乐在当前播放音乐之前
             currentIndex--
         }
     }
 
-    fun switchAndPlay(pos: Int) {
-        if (pos !in _playlist.value.indices || pos == currentIndex) {
-            return
+    private fun findIndexById(id: Int): Int {
+        for (i in 0 until _playlist.value.size) {
+            if (_playlist.value[i].id == id) {
+                return i
+            }
         }
-        currentIndex = pos
-        playCurrent()
+        return -1
+    }
+
+    fun switchAndPlay(id: Int) {
+        val index = findIndexById(id)
+        if (index != -1 && index != currentIndex){
+            currentIndex = index
+            playCurrent()
+        }
     }
 
 }

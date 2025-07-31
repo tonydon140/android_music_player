@@ -1,6 +1,7 @@
 package com.tonydon.music_tangjian.fragment
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -17,6 +18,7 @@ import com.tonydon.music_tangjian.R
 import com.tonydon.music_tangjian.adapter.MusicListAdapter
 import com.tonydon.music_tangjian.service.PlayerManager
 import kotlinx.coroutines.launch
+import kotlin.math.log
 
 class MusicListBottomSheet : BottomSheetDialogFragment() {
     lateinit var adapter: MusicListAdapter
@@ -47,12 +49,13 @@ class MusicListBottomSheet : BottomSheetDialogFragment() {
         typeIV.setImageResource(iconList[mode])
         typeTV.text = textList[mode]
 
-        adapter = MusicListAdapter({ pos ->
+        adapter = MusicListAdapter({ id ->
             // 点击播放回调
-            PlayerManager.switchAndPlay(pos)
-        }, { pos ->
+            PlayerManager.switchAndPlay(id)
+        }, { id ->
             // 点击删除回调
-            PlayerManager.remove(pos)
+            Log.d("music_delete", "id = $id")
+            PlayerManager.remove(id)
         })
         rv.adapter = adapter
         rv.layoutManager = LinearLayoutManager(context)

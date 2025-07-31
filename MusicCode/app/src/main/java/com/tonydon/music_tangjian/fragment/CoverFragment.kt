@@ -17,7 +17,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.bumptech.glide.Glide
 import com.tonydon.music_tangjian.R
 import com.tonydon.music_tangjian.service.PlayerManager
-import com.tonydon.music_tangjian.vm.MusicViewModel
 import kotlinx.coroutines.launch
 
 
