@@ -7,12 +7,16 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.tonydon.music_tangjian.R
 import com.tonydon.music_tangjian.adapter.MusicListAdapter
 import com.tonydon.music_tangjian.service.PlayerManager
+import kotlinx.coroutines.launch
 
 class MusicListBottomSheet : BottomSheetDialogFragment() {
     lateinit var adapter: MusicListAdapter
@@ -39,45 +43,54 @@ class MusicListBottomSheet : BottomSheetDialogFragment() {
         val countTV = view.findViewById<TextView>(R.id.tv_count)
         val typeIV = view.findViewById<ImageView>(R.id.iv_list_type)
         val typeTV = view.findViewById<TextView>(R.id.tv_list_type)
-        val mode = PlayerManager.binder.getPlayMode()
+        val mode = PlayerManager.playMode.value
         typeIV.setImageResource(iconList[mode])
         typeTV.text = textList[mode]
 
-
-        rv.layoutManager = LinearLayoutManager(context)
-
         adapter = MusicListAdapter({ pos ->
             // 点击播放回调
-            PlayerManager.binder.switchAndPlay(pos)
+            PlayerManager.switchAndPlay(pos)
         }, { pos ->
             // 点击删除回调
-            PlayerManager.binder.remove(pos)
-            val list = PlayerManager.binder.getPlayList()
-            adapter.submitList(list)
-            countTV.text = "${list.size}"
+            PlayerManager.remove(pos)
         })
-        adapter.submitList(PlayerManager.binder.getPlayList())
-        countTV.text = "${PlayerManager.binder.getPlayListSize()}"
-        adapter.setPlayingId(PlayerManager.binder.getCurrentMusic().id)
         rv.adapter = adapter
+        rv.layoutManager = LinearLayoutManager(context)
 
-        // 监听音乐
-        PlayerManager.binder.addOnPreparedListener { music ->
-            adapter.setPlayingId(music.id)
-        }
-        PlayerManager.binder.addOnPlayModeChangedListener { playMode ->
-            typeIV.setImageResource(iconList[playMode])
-            typeTV.text = textList[playMode]
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    PlayerManager.playMode.collect { mode ->
+                        typeIV.setImageResource(iconList[mode])
+                        typeTV.text = textList[mode]
+                    }
+                }
+                launch {
+                    PlayerManager.currentMusic.collect { music ->
+                        if (music != null) {
+                            adapter.setPlayingId(music.id)
+                        }
+                    }
+                }
+                launch {
+                    PlayerManager.playlist.collect { playlist ->
+                        adapter.submitList(playlist)
+                        countTV.text = "${playlist.size}"
+                        if (playlist.isEmpty()) {
+                            dismiss()
+                        }
+                    }
+                }
+            }
         }
 
         view.findViewById<LinearLayout>(R.id.custom_button).setOnClickListener {
-            PlayerManager.binder.switchPlayMode()
+            PlayerManager.switchPlayMode()
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-
     }
 
 }

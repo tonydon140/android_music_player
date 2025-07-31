@@ -8,12 +8,11 @@ import com.tonydon.music_tangjian.fragment.LyricFragment
 import com.tonydon.music_tangjian.io.MusicInfo
 
 class MusicPagerAdapter(
-    val musicInfo: MusicInfo,
     fragment: FragmentActivity
 ) : FragmentStateAdapter(fragment) {
 
-    val coverFragment = CoverFragment(musicInfo.coverUrl)
-    val lyricFragment = LyricFragment(musicInfo.lyricUrl)
+    val coverFragment = CoverFragment()
+    val lyricFragment = LyricFragment()
 
     override fun createFragment(position: Int): Fragment {
         return when (position) {

@@ -11,15 +11,17 @@ import android.view.animation.LinearInterpolator
 import android.view.animation.RotateAnimation
 import android.widget.ImageView
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.bumptech.glide.Glide
 import com.tonydon.music_tangjian.R
 import com.tonydon.music_tangjian.service.PlayerManager
 import com.tonydon.music_tangjian.vm.MusicViewModel
+import kotlinx.coroutines.launch
 
 
-class CoverFragment(
-    val coverUrl: String
-) : Fragment() {
+class CoverFragment : Fragment() {
 
     lateinit var imageView: ImageView
     lateinit var rotateAnim: ObjectAnimator
@@ -46,26 +48,43 @@ class CoverFragment(
             repeatCount = ValueAnimator.INFINITE  // 无限循环
             interpolator = LinearInterpolator()   // 匀速插值，保持匀速旋转
         }
-        if (PlayerManager.binder.isPlaying()) {
-            rotateAnim.start()
+        rotateAnim.start()
+
+        lifecycleScope.launch {
+            launch {
+                PlayerManager.currentMusic.collect { music ->
+                    if (music != null) {
+                        doLoadCover(music.coverUrl)
+                    }
+                }
+            }
+            launch {
+                PlayerManager.isPlaying.collect { isPlaying ->
+                    if (isPlaying) {
+                        rotateAnim.resume()
+                    } else {
+                        rotateAnim.pause()
+                    }
+                }
+            }
         }
-        // 如果外部在 onViewCreated 之前调用过 updateImage，就在这里真正加载一次
-        pendingCoverUrl?.let { doLoadCover(it) }
-        pendingCoverUrl = null
-        doLoadCover(coverUrl)
+//        // 如果外部在 onViewCreated 之前调用过 updateImage，就在这里真正加载一次
+//        pendingCoverUrl?.let { doLoadCover(it) }
+//        pendingCoverUrl = null
+//        doLoadCover(coverUrl)
     }
 
-    /**
-     * Activity / Adapter / Service 统一调用这个方法来更新封面
-     */
-    fun updateImage(coverUrl: String) {
-        // Fragment 尚未 attach，或者 view 还没初始化
-        if (!this::imageView.isInitialized) {
-            pendingCoverUrl = coverUrl
-            return
-        }
-        doLoadCover(coverUrl)
-    }
+//    /**
+//     * Activity / Adapter / Service 统一调用这个方法来更新封面
+//     */
+//    fun updateImage(coverUrl: String) {
+//        // Fragment 尚未 attach，或者 view 还没初始化
+//        if (!this::imageView.isInitialized) {
+//            pendingCoverUrl = coverUrl
+//            return
+//        }
+//        doLoadCover(coverUrl)
+//    }
 
     private fun doLoadCover(url: String) {
         Glide.with(this)
@@ -74,16 +93,16 @@ class CoverFragment(
             .into(imageView)
     }
 
-    fun stopAnim() {
-        rotateAnim.pause()
-    }
-
-    fun resumeAnim() {
-        if (!rotateAnim.isStarted) {
-            rotateAnim.start()
-        } else {
-            rotateAnim.resume()
-        }
-    }
+//    fun stopAnim() {
+//        rotateAnim.pause()
+//    }
+//
+//    fun resumeAnim() {
+//        if (!rotateAnim.isStarted) {
+//            rotateAnim.start()
+//        } else {
+//            rotateAnim.resume()
+//        }
+//    }
 
 }

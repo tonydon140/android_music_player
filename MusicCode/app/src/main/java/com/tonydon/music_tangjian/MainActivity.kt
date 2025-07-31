@@ -14,7 +14,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
@@ -46,8 +48,10 @@ class MainActivity : AppCompatActivity() {
     lateinit var playIB: ImageButton
     lateinit var listIB: ImageButton
     lateinit var bottomView: ConstraintLayout
+    lateinit var deepseekIV: ImageView
 
-    private fun requestPermission(){
+
+    private fun requestPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1001)
@@ -64,48 +68,66 @@ class MainActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
-        requestPermission() // 请求权限
 
-        // 启动服务
-        PlayerManager.init(this) {
-            PlayerManager.binder.addOnPreparedListener { music ->
-                bottomView.visibility = View.VISIBLE
-                nameTV.text = music.musicName
-                val tmp = "-${music.author}"
-                authorTV.text = tmp
-                Glide.with(coverIV)
-                    .load(music.coverUrl)
-                    .circleCrop()
-                    .into(coverIV)
-            }
+        // 请求通知权限
+        requestPermission()
 
-            PlayerManager.binder.addOnStartListener {
-                playIB.setImageResource(R.drawable.ic_home_pause) // 切换为播放图标
-            }
-
-            PlayerManager.binder.addOnPauseListener {
-                playIB.setImageResource(R.drawable.ic_home_play) // 切换为播放图标
-            }
-
-            // 播放列表为空
-            PlayerManager.binder.addOnPlayListEmptyListener {
-                // 隐藏 View
-                bottomView.visibility = View.GONE
-            }
-        }
-
+        // 获取 View 实例
         nameTV = findViewById(R.id.tv_bottom_name)
         authorTV = findViewById(R.id.tv_bottom_author)
         coverIV = findViewById(R.id.iv_bottom_cover)
         playIB = findViewById(R.id.ib_home_play)
         listIB = findViewById(R.id.ib_bottom_list)
         bottomView = findViewById(R.id.floating_view)
-
+        deepseekIV = findViewById(R.id.iv_deepseek)
         rvContent = findViewById(R.id.rv_content)
+
+        // 初始化播放服务
+        PlayerManager.init(this)
+
+        // 监听 StateFlow
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                // 监听音乐切换
+                launch {
+                    PlayerManager.currentMusic.collect { music ->
+                        bottomView.visibility = View.VISIBLE
+                        nameTV.text = music?.musicName
+                        val tmp = "-${music?.author}"
+                        authorTV.text = tmp
+                        Glide.with(coverIV)
+                            .load(music?.coverUrl)
+                            .circleCrop()
+                            .into(coverIV)
+                    }
+                }
+                // 监听播放状态
+                launch {
+                    PlayerManager.isPlaying.collect { isPlaying ->
+                        if (isPlaying) {
+                            playIB.setImageResource(R.drawable.ic_home_pause) // 切换为播放图标
+                        } else {
+                            playIB.setImageResource(R.drawable.ic_home_play) // 切换为播放图标
+                        }
+                    }
+                }
+                // 监听播放列表
+                launch {
+                    PlayerManager.playlist.collect { playlist ->
+                        if (playlist.isEmpty()){
+                            bottomView.visibility = View.GONE
+                        }else{
+                            bottomView.visibility = View.VISIBLE
+                        }
+                    }
+                }
+            }
+        }
+
         // ItemAdapter 设置播放回调
         itemAdapter = ItemAdapter { infoList, pos ->
-            PlayerManager.binder.addPlayList(infoList)
-            PlayerManager.binder.playMusic(infoList[pos])
+            PlayerManager.addPlayList(infoList)
+            PlayerManager.playMusic(infoList[pos])
             val intent = Intent(this, AudioPlayActivity::class.java)
             startActivity(intent)
         }
@@ -140,7 +162,7 @@ class MainActivity : AppCompatActivity() {
         })
 
 
-        playIB.setOnClickListener { PlayerManager.binder.pauseOrResume() }
+        playIB.setOnClickListener { PlayerManager.pauseOrResume() }
 
         // 弹出音乐列表
         listIB.setOnClickListener {
@@ -156,6 +178,11 @@ class MainActivity : AppCompatActivity() {
                 R.anim.slide_in_up,
                 0
             )
+        }
+        // 点击 AI 按钮，加入 AI 页面
+        deepseekIV.setOnClickListener {
+            val intent = Intent(this, DeepseekActivity::class.java)
+            startActivity(intent)
         }
     }
 
@@ -183,7 +210,7 @@ class MainActivity : AppCompatActivity() {
                 swipeRefreshLayout.isRefreshing = false
                 // 添加随机的模块音乐
                 val randomMusicList = res.data.records.random().musicInfoList
-                PlayerManager.binder.initPlayList(randomMusicList)
+                PlayerManager.initPlayList(randomMusicList)
             }
             Log.d("music", res.data.records.toString())
         }

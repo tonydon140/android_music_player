@@ -5,13 +5,14 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.dirror.lyricviewx.LyricViewX
 import com.tonydon.music_tangjian.R
+import com.tonydon.music_tangjian.service.PlayerManager
+import kotlinx.coroutines.launch
 
 
-class LyricFragment(
-    val lyricUrl: String
-) : Fragment() {
+class LyricFragment : Fragment() {
 
     private lateinit var lyricViewX: LyricViewX
 
@@ -29,7 +30,13 @@ class LyricFragment(
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         lyricViewX = view.findViewById(R.id.lyricViewX)
-        updateLyric(lyricUrl)
+        lifecycleScope.launch {
+            PlayerManager.currentMusic.collect { music ->
+                if (music != null) {
+                    updateLyric(music.lyricUrl)
+                }
+            }
+        }
     }
 
     fun updateLyric(url: String) {
@@ -38,7 +45,6 @@ class LyricFragment(
 
     fun updateTime(time: Long) {
         lyricViewX.updateTime(time)
-
     }
 
     fun setColor(color: Int) {

@@ -20,7 +20,9 @@ import androidx.core.graphics.ColorUtils
 import androidx.core.graphics.toColorInt
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.palette.graphics.Palette
 import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
@@ -35,6 +37,7 @@ import com.tonydon.music_tangjian.service.PlayerManager
 import com.tonydon.music_tangjian.utils.ConfigUtils
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.Locale
 import kotlin.random.Random
 
 class AudioPlayActivity : AppCompatActivity() {
@@ -60,31 +63,6 @@ class AudioPlayActivity : AppCompatActivity() {
         R.drawable.ic_random
     )
 
-    private val onPauseListener = object : MusicService.OnPauseListener {
-        override fun onPause() {
-            playButton.setImageResource(R.drawable.ic_play) // 切换为播放图标
-            adapter.coverFragment.stopAnim()    // 停止动画
-        }
-    }
-
-    // 分离成变量的监听器
-    private val preparedListener = MusicService.OnPreparedListener { music ->
-        setupUI(music, true)
-    }
-
-    private val startListener = MusicService.OnStartListener {
-        playButton.setImageResource(R.drawable.ic_pause)
-        adapter.coverFragment.resumeAnim()
-    }
-
-    private val playModeChangedListener = MusicService.OnPlayModeChangedListener { playMode ->
-        switchTypeButton.setImageResource(playTypeImageIds[playMode])
-    }
-
-    private val playListEmptyListener = MusicService.OnPlayListEmptyListener {
-        onBackPressedDispatcher.onBackPressed()
-    }
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -95,7 +73,6 @@ class AudioPlayActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
-        val curMusic = PlayerManager.binder.getCurrentMusic()
 
         // 获取视图
         root = findViewById(R.id.main_audio_play)
@@ -114,22 +91,61 @@ class AudioPlayActivity : AppCompatActivity() {
         displayButton = findViewById(R.id.btn_display)
 
         // 配置封面图和歌词页面
-        adapter = MusicPagerAdapter(curMusic, this)
+        adapter = MusicPagerAdapter(this)
         viewPager.adapter = adapter
         viewPager.offscreenPageLimit = 2
 
-        // 注册监听
-        PlayerManager.binder.addOnPauseListener(onPauseListener)
-        PlayerManager.binder.addOnPreparedListener(preparedListener)
-        PlayerManager.binder.addOnStartListener(startListener)
-        PlayerManager.binder.addOnPlayModeChangedListener(playModeChangedListener)
-        PlayerManager.binder.addOnPlayListEmptyListener(playListEmptyListener)
-
         // 播放控制
-        playButton.setOnClickListener { PlayerManager.binder.pauseOrResume() }
-        nextButton.setOnClickListener { PlayerManager.binder.playUserNext() }
-        prevButton.setOnClickListener { PlayerManager.binder.playUserPrev() }
-        switchTypeButton.setOnClickListener { PlayerManager.binder.switchPlayMode() }
+        playButton.setOnClickListener { PlayerManager.pauseOrResume() }
+        nextButton.setOnClickListener { PlayerManager.playUserNext() }
+        prevButton.setOnClickListener { PlayerManager.playUserPrev() }
+        switchTypeButton.setOnClickListener { PlayerManager.switchPlayMode() }
+
+        lifecycleScope.launch {
+            // 在生命周期为 STARTED 或更高时运行
+            // 生命周期低于 STARTED 会自动挂起
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    // 自动监听 playMode 的变化
+                    PlayerManager.playMode.collect { mode ->
+                        switchTypeButton.setImageResource(playTypeImageIds[mode])
+                    }
+                }
+                launch {
+                    // 自动监听 isPlaying 的变化
+                    PlayerManager.isPlaying.collect { isPlaying ->
+                        if (isPlaying) {
+                            playButton.setImageResource(R.drawable.ic_pause)
+                        } else {
+                            playButton.setImageResource(R.drawable.ic_play)
+                        }
+                    }
+                }
+                // 自动监听 music 的变化
+                launch {
+                    PlayerManager.currentMusic.collect { music ->
+                        if (music != null) {
+                            setupUI(music)
+                        }
+                    }
+                }
+                // 自动监听 playlist 的变化
+                launch {
+                    PlayerManager.playlist.collect { playlist ->
+                        if (playlist.isEmpty()) {
+                            onBackPressedDispatcher.onBackPressed()
+                        }
+                    }
+                }
+                // 自动监听 duration 的变化
+                launch {
+                    PlayerManager.duration.collect { duration ->
+                        seekBar.max = duration.toInt()
+                        seekEndTimeTV.text = formatTime(duration.toInt())
+                    }
+                }
+            }
+        }
 
         // 打开音乐列表
         displayButton.setOnClickListener {
@@ -138,7 +154,6 @@ class AudioPlayActivity : AppCompatActivity() {
 
         // 设置收藏按钮
         favoriteButton.setOnClickListener { setFavorite() }
-
 
         // 设置进度条拖动监听
         seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -155,7 +170,7 @@ class AudioPlayActivity : AppCompatActivity() {
 
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
                 if (seekBar != null) {
-                    PlayerManager.binder.seekTo(seekBar.progress)
+                    PlayerManager.seekTo(seekBar.progress)
                 }
             }
         })
@@ -174,35 +189,21 @@ class AudioPlayActivity : AppCompatActivity() {
                 )
             }
         })
-        setupUI(curMusic)   // 根据播放状态初始化 UI
+
         updateProgressUI()  // 定时更新进度
     }
 
     /**
      * 根据播放音乐更新 UI
      */
-    private fun setupUI(music: MusicInfo, update: Boolean = false) {
+    private fun setupUI(music: MusicInfo) {
         // 文字信息
         nameTV.text = music.musicName
         authorTV.text = music.author
-        // 设置播放按钮
-        if (PlayerManager.binder.isPlaying()) {
-            playButton.setImageResource(R.drawable.ic_pause)
-        } else {
-            playButton.setImageResource(R.drawable.ic_play)
-        }
-        // 设置播放模式按钮
-        switchTypeButton.setImageResource(playTypeImageIds[PlayerManager.binder.getPlayMode()])
         // 设置进度条
         seekBar.min = 0
-        seekBar.max = PlayerManager.binder.getDuration()
-        seekEndTimeTV.text = formatTime(PlayerManager.binder.getDuration())
-        // 更新图片和歌词
-        if (update) {
-            adapter.coverFragment.resumeAnim()
-            adapter.coverFragment.updateImage(music.coverUrl)
-            adapter.lyricFragment.updateLyric(music.lyricUrl)
-        }
+        seekBar.max = PlayerManager.getDuration()
+        seekEndTimeTV.text = formatTime(PlayerManager.getDuration())
         // 设置背景
         setBackgroundColor(music)
         // 设置是否收藏
@@ -211,7 +212,7 @@ class AudioPlayActivity : AppCompatActivity() {
     }
 
     private fun setFavorite() {
-        val music = PlayerManager.binder.getCurrentMusic()
+        val music = PlayerManager.currentMusic.value ?: return
         val oldIsFav = ConfigUtils.isFavorite(music)
         ConfigUtils.setFavorite(music, !oldIsFav)
         if (oldIsFav) {
@@ -304,7 +305,7 @@ class AudioPlayActivity : AppCompatActivity() {
         lifecycleScope.launch {
             while (true) {
                 delay(500)
-                val position = PlayerManager.binder.getCurrentPosition()
+                val position = PlayerManager.getCurrentPosition()
                 seekBar.progress = position
                 seekStartTimeTV.text = formatTime(position)
                 adapter.lyricFragment.updateTime(position.toLong())
@@ -317,15 +318,10 @@ class AudioPlayActivity : AppCompatActivity() {
         val totalSec = ms / 1000
         val min = totalSec / 60
         val sec = totalSec % 60
-        return String.format("%02d: %02d", min, sec)
+        return String.format(Locale.US, "%02d: %02d", min, sec)
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        PlayerManager.binder.removeOnPauseListener(onPauseListener)
-        PlayerManager.binder.removeOnPreparedListener(preparedListener)
-        PlayerManager.binder.removeOnStartListener(startListener)
-        PlayerManager.binder.removeOnPlayModeChangedListener(playModeChangedListener)
-        PlayerManager.binder.removeOnPlayListEmptyListener(playListEmptyListener)
     }
 }

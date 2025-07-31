@@ -45,7 +45,7 @@ class CardAdapter(
         holder.getView<TextView>(R.id.tv_music_name).text = item?.musicName
         // 点击 + 号，添加音乐到播放列表
         holder.getView<ImageButton>(R.id.ib_play).setOnClickListener {
-            PlayerManager.binder.addOne(item!!)
+            PlayerManager.addOne(item!!)
         }
 
         holder.itemView.setOnClickListener {
