@@ -13,39 +13,24 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <LinearLayout
-            android:orientation="horizontal"
+        <EditText
+            android:id="@+id/search_input"
             android:layout_width="match_parent"
+            android:layout_height="42dp"
             android:layout_marginStart="18dp"
-            android:layout_marginEnd="10dp"
-            android:layout_height="wrap_content">
-            <EditText
-                android:id="@+id/search_input"
-                android:layout_width="0dp"
-                android:layout_weight="1"
-                android:layout_height="42dp"
-                android:layout_marginTop="8dp"
-                android:layout_marginEnd="10dp"
-                android:layout_marginBottom="8dp"
-                android:background="@drawable/search_edit_background"
-                android:drawableStart="@drawable/search_24px"
-                android:drawablePadding="8dp"
-                android:drawableTint="#9d9e9e"
-                android:hint="搜索内容"
-                android:inputType="text"
-                android:paddingStart="10dp"
-                android:singleLine="true"
-                android:textColorHint="#9d9e9e"
-                android:textSize="14sp" />
-            <ImageView
-                android:id="@+id/iv_deepseek"
-                android:layout_marginEnd="10dp"
-                android:layout_gravity="center_vertical"
-                android:src="@drawable/ic_wand_stars"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
-        </LinearLayout>
-
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="18dp"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/search_edit_background"
+            android:drawableStart="@drawable/search_24px"
+            android:drawablePadding="8dp"
+            android:drawableTint="#9d9e9e"
+            android:hint="搜索内容"
+            android:inputType="text"
+            android:paddingStart="10dp"
+            android:singleLine="true"
+            android:textColorHint="#9d9e9e"
+            android:textSize="14sp" />
 
 
         <androidx.swiperefreshlayout.widget.SwipeRefreshLayout

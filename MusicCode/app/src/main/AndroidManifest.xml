@@ -2,15 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-permission android:name="android.permission.INTERNET" />
-
-    <!-- Android 9 (API 28) 前台服务的权限-->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-
-    <!-- Android 14 (API 34) 专门用于 mediaPlayback 类型服务权限-->
+    <uses-permission android:name="android.permission.INTERNET" /> <!-- Android 9 (API 28) 前台服务的权限 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" /> <!-- Android 14 (API 34) 专门用于 mediaPlayback 类型服务权限 -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
-
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".App"
@@ -22,8 +17,11 @@
         android:networkSecurityConfig="@xml/network_security_config"
         android:roundIcon="@mipmap/ic_launcher_music_round"
         android:supportsRtl="true"
-
         android:theme="@style/Theme.Music_tangjian">
+        <activity
+            android:windowSoftInputMode="adjustResize"
+            android:name=".DeepseekActivity"
+            android:exported="false" />
         <activity
             android:name=".AudioPlayActivity"
             android:exported="false" />
@@ -32,14 +30,13 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
         <activity
-            android:launchMode="singleTask"
             android:name=".MainActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:launchMode="singleTask" />
 
         <service
             android:name=".service.MusicService"

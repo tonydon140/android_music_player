@@ -41,6 +41,8 @@ android {
 }
 
 dependencies {
+    // Room
+    implementation("androidx.room:room-runtime:2.7.2")
     // ViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.0")
     implementation("androidx.fragment:fragment-ktx:1.5.0")
