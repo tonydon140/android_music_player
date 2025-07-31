@@ -5,9 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
-import android.util.Log
 import androidx.core.content.ContextCompat
-import androidx.media3.common.MediaItem
 import com.tonydon.music_tangjian.io.MusicInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -55,21 +53,9 @@ object PlayerManager {
         isPlaying.value = curIsPlaying
     }
 
-    fun playMusic(music: MusicInfo) {
-        if (music !in playlistSet) return
-        for (i in 0 until _playlist.value.size) {
-            if (_playlist.value[i].id == music.id) {
-                if (currentIndex != i) {
-                    currentIndex = i
-                } else {
-                    return
-                }
-                break
-            }
-        }
-        playCurrent()
-    }
-
+    /**
+     * 播放当前音乐
+     */
     fun playCurrent() {
         if (!isBind || playlistSet.isEmpty()) return
         val music = playlist.value[currentIndex]

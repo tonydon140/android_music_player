@@ -6,9 +6,7 @@ import android.content.res.ColorStateList
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.drawable.Drawable
-import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.SeekBar
@@ -28,17 +26,14 @@ import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
-import com.tencent.mmkv.MMKV
 import com.tonydon.music_tangjian.adapter.MusicPagerAdapter
 import com.tonydon.music_tangjian.fragment.MusicListBottomSheet
 import com.tonydon.music_tangjian.io.MusicInfo
-import com.tonydon.music_tangjian.service.MusicService
 import com.tonydon.music_tangjian.service.PlayerManager
 import com.tonydon.music_tangjian.utils.ConfigUtils
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Locale
-import kotlin.random.Random
 
 class AudioPlayActivity : AppCompatActivity() {
 

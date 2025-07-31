@@ -1,7 +1,6 @@
 package com.tonydon.music_tangjian.adapter
 
 import android.content.Context
-import android.util.Log
 import android.view.ViewGroup
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -10,17 +9,19 @@ import androidx.viewpager2.widget.ViewPager2
 import com.chad.library.adapter4.BaseQuickAdapter
 import com.chad.library.adapter4.viewholder.QuickViewHolder
 import com.tonydon.music_tangjian.R
+import com.tonydon.music_tangjian.adapter.home.BannerAdapter
+import com.tonydon.music_tangjian.adapter.home.CardAdapter
 import com.tonydon.music_tangjian.io.MusicInfo
 import com.tonydon.music_tangjian.io.MusicRecord
 import com.youth.banner.Banner
 import com.youth.banner.indicator.CircleIndicator
 
 
-class ItemAdapter(
+class HomeItemAdapter(
     val onPlay: (List<MusicInfo>, Int) -> Unit
 ) : BaseQuickAdapter<MusicRecord, QuickViewHolder>() {
 
-    lateinit var bannerAdapter: ImageAdapter
+    lateinit var bannerAdapter: BannerAdapter
 
     override fun onBindViewHolder(
         holder: QuickViewHolder,
@@ -30,8 +31,10 @@ class ItemAdapter(
         when (holder.itemViewType) {
             // Banner
             1 -> {
-                val banner = holder.getView<Banner<MusicInfo, ImageAdapter>>(R.id.banner)
-                bannerAdapter = ImageAdapter(item?.musicInfoList)
+                val banner = holder.getView<Banner<MusicInfo, BannerAdapter>>(R.id.banner)
+                bannerAdapter = BannerAdapter(item?.musicInfoList) { pos ->
+                    onPlay(item!!.musicInfoList, pos)
+                }
                 banner.setAdapter(bannerAdapter)
                     .setIndicator(CircleIndicator(context)) // 默认圆点指示器
                     .setLoopTime(3000) // 自动轮播间隔

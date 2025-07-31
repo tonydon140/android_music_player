@@ -22,7 +22,7 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.bumptech.glide.Glide
 import com.google.gson.Gson
-import com.tonydon.music_tangjian.adapter.ItemAdapter
+import com.tonydon.music_tangjian.adapter.HomeItemAdapter
 import com.tonydon.music_tangjian.fragment.MusicListBottomSheet
 import com.tonydon.music_tangjian.io.MusicRes
 import com.tonydon.music_tangjian.service.PlayerManager
@@ -36,7 +36,7 @@ class MainActivity : AppCompatActivity() {
     val gson = Gson()
     val client = OkHttpClient()
     lateinit var rvContent: RecyclerView
-    lateinit var itemAdapter: ItemAdapter
+    lateinit var homeItemAdapter: HomeItemAdapter
     lateinit var swipeRefreshLayout: SwipeRefreshLayout
     var isLoading = false
     var current = 1
@@ -125,13 +125,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         // ItemAdapter 设置播放回调
-        itemAdapter = ItemAdapter { infoList, pos ->
+        homeItemAdapter = HomeItemAdapter { infoList, pos ->
             PlayerManager.addPlayList(infoList)
-            PlayerManager.playMusic(infoList[pos])
+            PlayerManager.switchAndPlay(infoList[pos].id)
             val intent = Intent(this, AudioPlayActivity::class.java)
             startActivity(intent)
         }
-        rvContent.adapter = itemAdapter
+        rvContent.adapter = homeItemAdapter
         val layoutManager = LinearLayoutManager(this)
         rvContent.layoutManager = layoutManager
 
@@ -206,7 +206,7 @@ class MainActivity : AppCompatActivity() {
             val body = response.body?.string()
             val res: MusicRes = gson.fromJson(body, MusicRes::class.java)
             runOnUiThread {
-                itemAdapter.submitList(res.data.records)
+                homeItemAdapter.submitList(res.data.records)
                 swipeRefreshLayout.isRefreshing = false
                 // 添加随机的模块音乐
                 val randomMusicList = res.data.records.random().musicInfoList
@@ -244,7 +244,7 @@ class MainActivity : AppCompatActivity() {
             val body = response.body?.string()
             val res: MusicRes = gson.fromJson(body, MusicRes::class.java)
             runOnUiThread {
-                itemAdapter.addAll(res.data.records)
+                homeItemAdapter.addAll(res.data.records)
                 swipeRefreshLayout.isRefreshing = false
             }
             Log.d("music", res.data.records.toString())

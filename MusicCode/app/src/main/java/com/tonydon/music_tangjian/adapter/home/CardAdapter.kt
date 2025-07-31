@@ -1,23 +1,16 @@
-package com.tonydon.music_tangjian.adapter
+package com.tonydon.music_tangjian.adapter.home
 
 import android.content.Context
-import android.content.Intent
-import android.util.Log
-import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.recyclerview.widget.ListAdapter
-import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CenterCrop
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import com.chad.library.adapter4.BaseQuickAdapter
 import com.chad.library.adapter4.viewholder.QuickViewHolder
-import com.tonydon.music_tangjian.AudioPlayActivity
 import com.tonydon.music_tangjian.R
 import com.tonydon.music_tangjian.io.MusicInfo
 import com.tonydon.music_tangjian.service.PlayerManager

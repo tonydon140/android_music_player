@@ -5,7 +5,6 @@ import androidx.fragment.app.FragmentActivity
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.tonydon.music_tangjian.fragment.CoverFragment
 import com.tonydon.music_tangjian.fragment.LyricFragment
-import com.tonydon.music_tangjian.io.MusicInfo
 
 class MusicPagerAdapter(
     fragment: FragmentActivity
