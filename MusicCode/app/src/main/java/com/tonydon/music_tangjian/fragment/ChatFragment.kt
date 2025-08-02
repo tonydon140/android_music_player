@@ -1,9 +1,11 @@
 package com.tonydon.music_tangjian.fragment
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import androidx.fragment.app.Fragment
@@ -19,10 +21,12 @@ import kotlinx.coroutines.launch
 class ChatFragment : Fragment() {
 
     lateinit var messageVM: MessageViewModel
+    val messageAdapter = MessageAdapter()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        messageVM = ViewModelProvider(this)[MessageViewModel::class.java]
+        // 使用 Activity 作用域的共享 ViewModel
+        messageVM = ViewModelProvider(requireActivity())[MessageViewModel::class.java]
     }
 
     override fun onCreateView(
@@ -37,9 +41,9 @@ class ChatFragment : Fragment() {
         val rv = view.findViewById<RecyclerView>(R.id.chatRecycler)
         val sendIB = view.findViewById<ImageView>(R.id.iv_chat_send)
         val inputET = view.findViewById<EditText>(R.id.et_chat_input)
+        val analyzeBtn = view.findViewById<Button>(R.id.btn_analyze_music)
 
         // 对话消息的 Adapter
-        val messageAdapter = MessageAdapter()
         rv.adapter = messageAdapter
         rv.layoutManager = LinearLayoutManager(context)
 
@@ -48,20 +52,43 @@ class ChatFragment : Fragment() {
             val content = inputET.text.trim()
             if (content.isNotEmpty()) {
                 messageVM.sendMessage(content.toString())
+                analyzeBtn.visibility = View.GONE
             }
             inputET.text.clear()
         }
 
+        // 点击分析音乐喜好
+        analyzeBtn.setOnClickListener {
+            messageVM.analyze()
+            analyzeBtn.visibility = View.GONE
+        }
+
         // 监听消息列表的变化
         lifecycleScope.launch {
-            messageVM.messageList.collect { list ->
-                messageAdapter.submitList(list) {
-                    if (list.isNotEmpty()) {
-                        rv.smoothScrollToPosition(list.size - 1)
+            launch {
+                messageVM.messageList.collect { list ->
+                    messageAdapter.submitList(list) {
+                        if (list.isNotEmpty()) {
+                            rv.smoothScrollToPosition(list.size - 1)
+                        }
+                    }
+                }
+            }
+            launch {
+                messageVM.conversationId.collect { id ->
+                    // 新对话展示
+                    if (id == -1L) {
+                        analyzeBtn.visibility = View.VISIBLE
                     }
                 }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+//        messageAdapter.submitList(messageVM.messageList.value) // 主动提交一次当前值
+//        Log.d("tag_tj", "onResume, ${messageVM.messageList.value}")
     }
 
 }

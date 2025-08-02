@@ -16,6 +16,18 @@
         app:layout_constraintBottom_toTopOf="@+id/inputBar"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <!-- 音乐风格分析按钮（仅首次显示） -->
+    <Button
+        android:id="@+id/btn_analyze_music"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="分析我的音乐风格"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+
     <!-- 底部输入框 -->
     <LinearLayout
         android:id="@+id/inputBar"
@@ -46,4 +58,6 @@
             android:text="发送"
             android:textSize="14sp" />
     </LinearLayout>
+
+
 </androidx.constraintlayout.widget.ConstraintLayout>

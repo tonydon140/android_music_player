@@ -8,7 +8,7 @@ class MessageDiff : DiffUtil.ItemCallback<Message>() {
         oldItem: Message,
         newItem: Message
     ): Boolean {
-        return oldItem == newItem
+        return oldItem === newItem
     }
 
     override fun areContentsTheSame(
