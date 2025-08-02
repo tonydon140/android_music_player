@@ -24,7 +24,7 @@ import com.bumptech.glide.Glide
 import com.google.gson.Gson
 import com.tonydon.music_tangjian.adapter.HomeItemAdapter
 import com.tonydon.music_tangjian.fragment.MusicListBottomSheet
-import com.tonydon.music_tangjian.io.MusicRes
+import com.tonydon.music_tangjian.data.MusicRes
 import com.tonydon.music_tangjian.service.PlayerManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -81,9 +81,6 @@ class MainActivity : AppCompatActivity() {
         bottomView = findViewById(R.id.floating_view)
         deepseekIV = findViewById(R.id.iv_deepseek)
         rvContent = findViewById(R.id.rv_content)
-
-        // 初始化播放服务
-        PlayerManager.init(this)
 
         // 监听 StateFlow
         lifecycleScope.launch {

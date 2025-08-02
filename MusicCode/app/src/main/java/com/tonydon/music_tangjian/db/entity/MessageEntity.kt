@@ -24,5 +24,6 @@ data class MessageEntity(
     val conversationId: Long,         // 外键
     val isUser: Boolean,               // "user" or "bot"
     val content: String,
+    val iv: String, // 加密初始向量
     val timestamp: Long = System.currentTimeMillis()
 )

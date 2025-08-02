@@ -1,4 +1,4 @@
-package com.tonydon.music_tangjian.io
+package com.tonydon.music_tangjian.data
 
 /*{
     "moduleConfigId": 1,

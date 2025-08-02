@@ -11,8 +11,8 @@ import com.chad.library.adapter4.viewholder.QuickViewHolder
 import com.tonydon.music_tangjian.R
 import com.tonydon.music_tangjian.adapter.home.BannerAdapter
 import com.tonydon.music_tangjian.adapter.home.CardAdapter
-import com.tonydon.music_tangjian.io.MusicInfo
-import com.tonydon.music_tangjian.io.MusicRecord
+import com.tonydon.music_tangjian.data.MusicInfo
+import com.tonydon.music_tangjian.data.MusicRecord
 import com.youth.banner.Banner
 import com.youth.banner.indicator.CircleIndicator
 

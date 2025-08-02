@@ -9,7 +9,11 @@ import com.tonydon.music_tangjian.db.dao.MessageDao
 import com.tonydon.music_tangjian.db.entity.ConversationEntity
 import com.tonydon.music_tangjian.db.entity.MessageEntity
 
-@Database(entities = [ConversationEntity::class, MessageEntity::class], version = 1)
+@Database(
+    entities = [ConversationEntity::class, MessageEntity::class],
+    version = 1,
+    exportSchema = false
+)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun conversationDao(): ConversationDao
     abstract fun messageDao(): MessageDao

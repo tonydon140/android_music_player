@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.DiffUtil
 import com.chad.library.adapter4.BaseDifferAdapter
 import com.chad.library.adapter4.viewholder.QuickViewHolder
 import com.tonydon.music_tangjian.R
-import com.tonydon.music_tangjian.io.MusicInfo
+import com.tonydon.music_tangjian.data.MusicInfo
 
 class MusicListAdapter(
     private val onPlayClick: (Int) -> Unit,

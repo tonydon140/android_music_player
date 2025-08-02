@@ -1,7 +1,7 @@
 package com.tonydon.music_tangjian.utils
 
 import com.tencent.mmkv.MMKV
-import com.tonydon.music_tangjian.io.MusicInfo
+import com.tonydon.music_tangjian.data.MusicInfo
 
 object ConfigUtils {
     private val mmkv = MMKV.defaultMMKV()

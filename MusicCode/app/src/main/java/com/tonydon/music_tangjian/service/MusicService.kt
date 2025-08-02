@@ -17,10 +17,8 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.tonydon.music_tangjian.MainActivity
 import com.tonydon.music_tangjian.R
-import com.tonydon.music_tangjian.io.MusicInfo
+import com.tonydon.music_tangjian.data.MusicInfo
 import com.tonydon.music_tangjian.utils.CacheManager
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.sync.Mutex
 
 class MusicService() : Service() {
 

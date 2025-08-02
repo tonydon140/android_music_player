@@ -28,7 +28,7 @@ import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
 import com.tonydon.music_tangjian.adapter.MusicPagerAdapter
 import com.tonydon.music_tangjian.fragment.MusicListBottomSheet
-import com.tonydon.music_tangjian.io.MusicInfo
+import com.tonydon.music_tangjian.data.MusicInfo
 import com.tonydon.music_tangjian.service.PlayerManager
 import com.tonydon.music_tangjian.utils.ConfigUtils
 import kotlinx.coroutines.delay

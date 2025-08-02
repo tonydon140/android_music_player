@@ -1,4 +1,4 @@
-package com.tonydon.music_tangjian.io
+package com.tonydon.music_tangjian.data
 
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize

@@ -28,7 +28,7 @@
         app:layout_constraintBottom_toBottomOf="parent">
 
         <EditText
-            android:id="@+id/editText"
+            android:id="@+id/et_chat_input"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -39,7 +39,7 @@
 
         <ImageView
             android:layout_marginStart="10dp"
-            android:id="@+id/sendButton"
+            android:id="@+id/iv_chat_send"
             android:layout_width="32dp"
             android:layout_height="32dp"
             android:src="@drawable/ic_send"
