@@ -4,13 +4,12 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.tencent.mmkv.MMKV
 import com.tonydon.music_tangjian.data.Message
 import com.tonydon.music_tangjian.db.AppDatabase
 import com.tonydon.music_tangjian.db.entity.ConversationEntity
 import com.tonydon.music_tangjian.db.entity.MessageEntity
+import com.tonydon.music_tangjian.http.RetrofitClient
 import com.tonydon.music_tangjian.utils.ConfigUtils
-import com.tonydon.music_tangjian.utils.HttpUtils
 import com.tonydon.music_tangjian.utils.MessageCryptoUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,11 +25,11 @@ class MessageViewModel(application: Application) : AndroidViewModel(application)
     private val messageDao = db.messageDao()
 
     val conversationId = MutableStateFlow<Long>(-1L)
-    val mmkv = MMKV.defaultMMKV()
 
 
     private val internalList = mutableListOf<Message>()
     val messageList = MutableStateFlow<List<Message>>(emptyList())
+
 
     /**
      * 用户发送消息
@@ -73,7 +72,7 @@ class MessageViewModel(application: Application) : AndroidViewModel(application)
 
             // 请求 API，流式更新数据
             val builder = StringBuilder()
-            HttpUtils.streamResponse(content) { responseText ->
+            RetrofitClient.streamResponse(content) { responseText ->
                 builder.append(responseText)
                 internalList[internalList.lastIndex] = Message(isUser = false, builder.toString())
                 messageList.value = internalList.toList()
@@ -148,7 +147,7 @@ class MessageViewModel(application: Application) : AndroidViewModel(application)
 
             // 请求 API，流式更新数据
             val builder = StringBuilder()
-            HttpUtils.streamResponse(prompt) { responseText ->
+            RetrofitClient.streamResponse(prompt) { responseText ->
                 builder.append(responseText)
                 internalList[internalList.lastIndex] = Message(isUser = false, builder.toString())
                 messageList.value = internalList.toList()

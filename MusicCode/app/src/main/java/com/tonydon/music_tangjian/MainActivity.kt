@@ -9,6 +9,7 @@ import android.view.View
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -21,20 +22,16 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.bumptech.glide.Glide
-import com.google.gson.Gson
 import com.tonydon.music_tangjian.adapter.HomeItemAdapter
 import com.tonydon.music_tangjian.fragment.MusicListBottomSheet
-import com.tonydon.music_tangjian.data.MusicRes
+import com.tonydon.music_tangjian.http.RetrofitClient
 import com.tonydon.music_tangjian.service.PlayerManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import okhttp3.OkHttpClient
-import okhttp3.Request
+import kotlinx.coroutines.withContext
 
 class MainActivity : AppCompatActivity() {
 
-    val gson = Gson()
-    val client = OkHttpClient()
     lateinit var rvContent: RecyclerView
     lateinit var homeItemAdapter: HomeItemAdapter
     lateinit var swipeRefreshLayout: SwipeRefreshLayout
@@ -111,9 +108,9 @@ class MainActivity : AppCompatActivity() {
                 // 监听播放列表
                 launch {
                     PlayerManager.playlist.collect { playlist ->
-                        if (playlist.isEmpty()){
+                        if (playlist.isEmpty()) {
                             bottomView.visibility = View.GONE
-                        }else{
+                        } else {
                             bottomView.visibility = View.VISIBLE
                         }
                     }
@@ -152,7 +149,6 @@ class MainActivity : AppCompatActivity() {
                 val totalItemCount = layoutManager.itemCount
 
                 if (!isLoading && pos >= totalItemCount - 2) {
-                    isLoading = true
                     loadMore()
                 }
             }
@@ -183,68 +179,66 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-
     fun fetchData() {
-        lifecycleScope.launch(Dispatchers.IO) {
-            val url =
-                "https://hotfix-service-prod.g.mi.com/music/homePage?current=${current}&size=${size}"
-            val request = Request.Builder()
-                .url(url)
-                .header("Content-Type", "application/json")
-                .get()
-                .build()
+        // 启动协程，可以在主线程启动，Retrofit 会自动切换到 IO 线程
+        lifecycleScope.launch {
+            try {
+                // 直接调用 suspend 函数获取数据
+                val musicRes = RetrofitClient.musicApi.query(current, size)
 
-            val response = client.newCall(request).execute()
-            if (!response.isSuccessful) {
-                Log.e("music", "网络请求出错：${response.message}")
-                return@launch
+                // 成功后的业务逻辑
+                current += 1
+                val newRecords = musicRes.data.records
+                Log.d("music", newRecords.toString())
+
+                // 切换到主线程更新 UI
+                withContext(Dispatchers.Main) {
+                    homeItemAdapter.submitList(newRecords)
+                    swipeRefreshLayout.isRefreshing = false
+
+                    // 添加随机的模块音乐
+                    newRecords.randomOrNull()?.let {
+                        PlayerManager.initPlayList(it.musicInfoList)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("music", "网络请求出错", e)
+                withContext(Dispatchers.Main) {
+                    // 也可以在 UI 上给用户提示，比如一个 Toast
+                    Toast.makeText(this@MainActivity, "加载失败，请检查网络", Toast.LENGTH_SHORT)
+                        .show()
+                    swipeRefreshLayout.isRefreshing = false // 别忘了在出错时也要停止刷新动画
+                }
             }
-            current += 1
-            val body = response.body?.string()
-            val res: MusicRes = gson.fromJson(body, MusicRes::class.java)
-            runOnUiThread {
-                homeItemAdapter.submitList(res.data.records)
-                swipeRefreshLayout.isRefreshing = false
-                // 添加随机的模块音乐
-                val randomMusicList = res.data.records.random().musicInfoList
-                PlayerManager.initPlayList(randomMusicList)
-            }
-            Log.d("music", res.data.records.toString())
         }
     }
 
     fun loadMore() {
-        Log.d("music", "$current")
-        if ((current - 1) * size > maxSize) {
-            isLoading = false
+        if (isLoading || (current - 1) * size > maxSize) {
             return
         }
-        lifecycleScope.launch(Dispatchers.IO) {
-            val url =
-                "https://hotfix-service-prod.g.mi.com/music/homePage?current=${current}&size=${size}"
-            val request = Request.Builder()
-                .url(url)
-                .header("Content-Type", "application/json")
-                .get()
-                .build()
+        isLoading = true
 
-            // 获取请求
-            val response = client.newCall(request).execute()
-            isLoading = false
-
-            if (!response.isSuccessful) {
-                Log.e("music", "网络请求出错：${response.message}")
-                return@launch
+        // 开启协程加载更多
+        lifecycleScope.launch {
+            try {
+                val res = RetrofitClient.musicApi.query(current, size)
+                current++
+                val newRecords = res.data.records
+                withContext(Dispatchers.Main) {
+                    homeItemAdapter.addAll(newRecords)
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Log.e("music", "加载更多失败", e)
+                    Toast.makeText(applicationContext, "加载更多失败", Toast.LENGTH_SHORT).show()
+                }
+            } finally {
+                isLoading = false
+                withContext(Dispatchers.Main) {
+                    swipeRefreshLayout.isRefreshing = false
+                }
             }
-
-            current++
-            val body = response.body?.string()
-            val res: MusicRes = gson.fromJson(body, MusicRes::class.java)
-            runOnUiThread {
-                homeItemAdapter.addAll(res.data.records)
-                swipeRefreshLayout.isRefreshing = false
-            }
-            Log.d("music", res.data.records.toString())
         }
     }
 }

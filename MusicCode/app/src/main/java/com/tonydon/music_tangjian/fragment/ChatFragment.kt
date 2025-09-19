@@ -84,11 +84,4 @@ class ChatFragment : Fragment() {
             }
         }
     }
-
-    override fun onResume() {
-        super.onResume()
-//        messageAdapter.submitList(messageVM.messageList.value) // 主动提交一次当前值
-//        Log.d("tag_tj", "onResume, ${messageVM.messageList.value}")
-    }
-
 }

@@ -9,6 +9,8 @@ import com.chad.library.adapter4.BaseDifferAdapter
 import com.chad.library.adapter4.viewholder.QuickViewHolder
 import com.tonydon.music_tangjian.R
 import com.tonydon.music_tangjian.data.Message
+import io.noties.markwon.Markwon
+import io.noties.markwon.ext.latex.JLatexMathPlugin
 
 class MessageAdapter : BaseDifferAdapter<Message, QuickViewHolder>(MessageDiff()) {
     override fun onBindViewHolder(
@@ -19,6 +21,9 @@ class MessageAdapter : BaseDifferAdapter<Message, QuickViewHolder>(MessageDiff()
         if (item == null) {
             return
         }
+//        val markwon = Markwon.builder(context)
+//            .usePlugin(JLatexMathPlugin.create())
+        val markwon = Markwon.create(context)
         val leftChatView = holder.getView<LinearLayout>(R.id.left_chat_view)
         val rightChatView = holder.getView<LinearLayout>(R.id.right_chat_view)
         val leftTV = holder.getView<TextView>(R.id.left_chat_text_view)
@@ -30,7 +35,7 @@ class MessageAdapter : BaseDifferAdapter<Message, QuickViewHolder>(MessageDiff()
         } else {
             rightChatView.visibility = View.GONE
             leftChatView.visibility = View.VISIBLE
-            leftTV.text = item.content
+            markwon.setMarkdown(leftTV, item.content)
         }
     }
 
